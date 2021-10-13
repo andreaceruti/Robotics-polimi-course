@@ -1,0 +1,12 @@
+<launch>
+	<param name="initial_x" type="double" value="0.0" />
+	<param name="initial_y" type="double" value="0.0" />
+	<param name="initial_theta" type="double" value="0.0" />
+
+
+	<node pkg="project1" name="odometry_calculator_node" type="odometry_executable" output="screen"/>
+</launch>
+
+<!--BAG1 initial pose: x = 0.0, y = 0.0, theta = 0.0-->
+<!--BAG2 initial pose: x = -2.81132697617, y = 0.784711979093 theta = 3.0537938-->
+<!--BAG3 initial pose: x = -2.28603390243, y = -1.44419248415 theta = 4.4600495-->

@@ -1,0 +1,20 @@
+<launch>
+ 
+
+ <!--parameter to use bag time-->
+ <param name="/use_sim_time" value="true"/>
+ 
+
+ <!--static transform necessary to complete the tf tree used by gmapping to prouce the map-->
+ <node pkg="tf" type="static_transform_publisher" name="odom_to_laser" args="0.0 0.0 0.0 0.0 0.0 0.737 0.676 scout/base_link laser 100" />
+  
+
+ <!-- Gmapping -->
+ <include file="$(find project2)/launch/gmapping.launch.xml"/>
+
+
+ <!-- Rviz config -->
+ <node name="rviz" pkg="rviz" type="rviz" args="-d $(find project2)/rviz/gmapping_config.rviz" />
+
+
+</launch>

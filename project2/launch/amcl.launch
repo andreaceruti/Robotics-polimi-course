@@ -1,0 +1,113 @@
+<launch>
+
+  <!--parameter to use bag time-->
+  <param name="/use_sim_time" value="true"/>
+
+
+
+  <!--all the static transform necessary-->
+  <node pkg="tf" type="static_transform_publisher" name="laser_tf" args="0.0 0.0 0.0 0.0 0.0 0.737 0.676 base_link laser 100" />
+  <node pkg="tf" type="static_transform_publisher" name="odom_to_scout" args="0.0 0.0 0.0 0.0 0.0 0.0 1 odom scout/odom 100" />
+  <node pkg="tf" type="static_transform_publisher" name="odom_to_camera" args="0.0 0.0 0.0 0.0 0.0 0.0 1 odom camera_odom_frame 100" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_link_tf" args="0 0 0 0 0 0 1 camera_pose_frame camera_link" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_gyro_frame_tf" args="0 0.0212510693818 0 0 0 1 0 camera_link camera_gyro_frame" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_accel_frame_tf" args="0 0.0212510693818 0 0 0 1 0 camera_link camera_accel_frame" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_gyro_optical_frame_tf" args="0 0 0 0.5 -0.5 -0.5 0.5 camera_gyro_frame camera_gyro_optical_frame" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_accel_optical_frame_tf" args="0 0 0 0.5 -0.5 -0.5 0.5 camera_accel_frame camera_accel_optical_frame" />
+
+
+
+  <!-- Name of the map to use and initial position -->
+  <arg name="map_file"       default="$(find project2)/maps/map.yaml"/>
+  <arg name="initial_pose_x" default="0.0"/>
+  <arg name="initial_pose_y" default="0.0"/>
+  <arg name="initial_pose_a" default="0.0"/>
+
+
+  <!--IMU filter to pre-process mavros data-->
+    <node pkg="imu_filter_madgwick" type="imu_filter_node"      name="imu_filter_madgwick_node" output="screen">  
+      <remap from="imu/data_raw" to="mavros/imu/data_raw" />  
+      <param name="publish_tf" value="false"/>
+      <param name="use_mag" value="false"/> 
+      <param name="world_frame" value="nwu"/> 
+      <param name="use_magnetic_field_msg" value="false"/>
+      <param name="zeta" value="0.00"/>
+      <param name="gain" value="0.02"/>  
+  </node>  
+
+
+
+
+  <!--robot_localization EKF node for the odom frame -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="robot_localization_ekf_node_odom" clear_params="true">
+    <param name="frequency" value="10" />  
+    <param name="sensor_timeout" value="0.1" />  
+    <param name="two_d_mode" value="true" />
+    <param name="publish_tf" value="true" />
+    <param name="map_frame" value="map" />
+    <param name="odom_frame" value="odom" />
+    <param name="base_link_frame" value="base_link" />
+    <param name="world_frame" value="odom" />
+    <param name="print_diagnostics" value="true" />
+    <param name="odom0" value="/odom" />
+    <param name="odom0_differential" value="false"/>
+    <rosparam param="odom0_config">[false, false, false, 
+                                     false,false, true,
+                                     true, false, false, 
+                                     false, false, true,
+                                     false, false, false]</rosparam>
+    <param name="odom1" value="/camera/odom/sample" />
+    <param name="odom1_differential" value="false"/>
+    <rosparam param="odom1_config">[false, false, false, 
+                                     false,false, false,
+                                     true, false, false, 
+                                     false, false, true,
+                                     false, false, false]</rosparam>
+    <param name="imu0" value="/imu/data" />
+    <param name="imu0_differential" value="false"/>
+    <rosparam param="imu0_config">[false, false, false, 
+                                     false, false, true,
+                                     false, false, false, 
+                                     false, false, true,
+                                     true, false, false]</rosparam>
+    <param name="imu1" value="/camera/accel/sample" />
+    <param name="imu1_differential" value="false"/>
+    <rosparam param="imu1_config">[false, false, false, 
+                                     false, false, false,
+                                     false, false, false, 
+                                     false, false, false,
+                                     true, false, false]</rosparam> 
+    <param name="imu2" value="/camera/gyro/sample" />
+    <param name="imu2_differential" value="false"/>
+    <rosparam param="imu2_config">[false, false, false, 
+                                     false, false, false,
+                                     false, false, false, 
+                                     false, false, true,
+                                     false, false, false]</rosparam>   
+                                                   
+  </node>
+
+
+
+  <!--  ****** Maps *****  -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
+    <param name="frame_id" value="map"/>
+  </node>
+
+
+  <!--  ****** amcl *****  -->
+  <include file="$(find project2)/launch/amcl.launch.xml">
+    <arg name="scan_topic" value="scan"/>
+    <arg name="use_map_topic" value="true"/>
+    <arg name="initial_pose_x" value="$(arg initial_pose_x)"/>
+    <arg name="initial_pose_y" value="$(arg initial_pose_y)"/>
+    <arg name="initial_pose_a" value="$(arg initial_pose_a)"/>
+  </include>
+
+
+  <!-- Rviz config-->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find project2)/rviz/amcl_config.rviz" />
+
+
+
+</launch>
